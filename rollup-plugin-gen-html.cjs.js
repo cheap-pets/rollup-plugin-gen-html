@@ -1,4 +1,4 @@
-const { resolve, parse, join, dirname, basename, extname, relative } = require('path')
+const { resolve, parse, join, dirname, basename, extname, relative, isAbsolute } = require('path')
 const { existsSync, readFileSync, writeFileSync, unlinkSync, renameSync } = require('fs')
 const cheerio = require('cheerio')
 const hasha = require('hasha')
@@ -36,14 +36,15 @@ function _replaceToMinScripts ($, htmlFile) {
 }
 
 module.exports = (options = {}) => {
-  const { template, target, hash, replaceToMinScripts } = options
+  const { template, target, hash, replaceToMinScripts, cwd = process.cwd() } = options
   return {
     name: 'html',
     onwrite (config, data) {
       const file = resolve(config.file)
       const p = parse(file)
       const htmlFile = resolve(config.dir || p.dir, target || basename(template))
-      const $ = cheerio.load(readFileSync(template).toString(), { decodeEntities: false })
+      const tmpContent = readFileSync(isAbsolute(template) ? template : resolve(cwd, template).toString()
+      const $ = cheerio.load(tmpContent, { decodeEntities: false })
       if (replaceToMinScripts) _replaceToMinScripts($, htmlFile)
       _insertRef({
         $,

@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-gen-html",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "rollup plugin for generating html file from template & injecting bundled files",
   "main": "rollup-plugin-gen-html.cjs.js",
   "module": "rollup-plugin-gen-html.esm.js",

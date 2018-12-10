@@ -43,7 +43,7 @@ module.exports = (options = {}) => {
       const file = resolve(config.file)
       const p = parse(file)
       const htmlFile = resolve(config.dir || p.dir, target || basename(template))
-      const tmpContent = readFileSync(isAbsolute(template) ? template : resolve(cwd, template).toString()
+      const tmpContent = readFileSync(isAbsolute(template) ? template : resolve(cwd, template).toString())
       const $ = cheerio.load(tmpContent, { decodeEntities: false })
       if (replaceToMinScripts) _replaceToMinScripts($, htmlFile)
       _insertRef({

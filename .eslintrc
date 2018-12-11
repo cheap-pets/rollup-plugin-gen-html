@@ -1,0 +1,28 @@
+{
+  "root": true,
+  "extends": [
+    "standard"
+  ],
+  "globals": {},
+  "env": {
+    "commonjs": true,
+    "node": true,
+    "es6": true
+  },
+  "rules": {
+    "security/detect-object-injection": 0,
+    "security/detect-non-literal-fs-filename": 0,
+    "max-len": [
+      1,
+      {
+        "code": 120,
+        "tabWidth": 2,
+        "ignoreComments": true,
+        "ignoreTrailingComments": true,
+        "ignoreUrls": true,
+        "ignoreStrings": true,
+        "ignoreTemplateLiterals": true
+      }
+    ]
+  }
+}

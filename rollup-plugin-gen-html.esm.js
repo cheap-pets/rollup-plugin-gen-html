@@ -20,7 +20,7 @@ export default (options = {}) => {
   const hashedFiles = {}
 
   function _insertRef ({ $, ref, htmlFile }) {
-    if (!existsSync(ref)) return
+    // if (!existsSync(ref)) return
     const dir = dirname(htmlFile)
     if (extname(ref) === '.js') {
       $('<script type="text/javascript"></script>')
@@ -42,21 +42,18 @@ export default (options = {}) => {
     })
   }
 
-  function _writeHtml ({ scriptDir, scriptFile, scriptHash, cssFile, cssHash, input, output, code }) {
-    output = resolve(cwd, output || scriptDir)
+  function _writeHtml ({ dir, input, output, code, refFiles }) {
+    output = resolve(cwd, output || dir)
     if (!extname(output)) output = resolve(output, basename(input))
     const $ = cheerio.load(code, { decodeEntities: false })
     if (replaceToMinScripts) _replaceToMinScripts($, output)
-    scriptFile && _insertRef({
-      $,
-      ref: scriptFile,
-      htmlFile: output
-    })
-    cssFile && _insertRef({
-      $,
-      ref: cssFile,
-      htmlFile: output
-    })
+    for (let f of refFiles) {
+      _insertRef({
+        $,
+        ref: resolve(dir, f),
+        htmlFile: output
+      })
+    }
     code = $.html()
     for (let s in options.replaces) {
       let v = options.replaces[s]
@@ -66,17 +63,28 @@ export default (options = {}) => {
     return true
   }
 
-  function _renameWithHash (oldName, hash) {
-    const { dir, name, ext } = parse(oldName)
-    const newName = join(dir, name + '.' + hash + ext)
-    existsSync(newName) && unlinkSync(newName)
-    renameSync(oldName, newName)
-    return newName
+  function _renameWithHash (dir, fileName, hash) {
+    const { name, ext } = parse(fileName)
+    const newFileName = `${name}.${hash}${ext}`
+    const filePath = resolve(dir, fileName)
+    if (existsSync(filePath)) {
+      const newFilePath = resolve(dir, fileName)
+      existsSync(newFilePath) && unlinkSync(newFilePath)
+      renameSync(filePath, newFileName)
+    }
+    return newFileName
   }
 
-  function _removeOldHashedFiles (id) {
+  function _removeLastHashedFile (id) {
     const file = hashedFiles[id]
     file && existsSync(file) && unlinkSync(file)
+  }
+
+  function _getBundleItemHash (item) {
+    const content = item.code || item.source
+    return content
+      ? (hash === true ? hasha(content, { algorithm: 'md5' }) : hash)
+      : false
   }
 
   return {
@@ -90,53 +98,42 @@ export default (options = {}) => {
         return ''
       }
     },
-    onwrite (options, data) {
-      let scriptFile = resolve(options.file)
-      _removeOldHashedFiles(scriptFile)
-      const p = parse(scriptFile)
-      if (existsSync(scriptFile)) {
-        const scriptHash = hash === true
-          ? hasha(data.code, { algorithm: 'md5' })
-          : hash
-        if (scriptHash) {
-          hashedFiles[scriptFile] = scriptFile = _renameWithHash(scriptFile, scriptHash)
+    generateBundle (options, bundle, isWrite) {
+      if (!isWrite || (!html.length && !template)) return
+      const dir = parse(resolve(options.file)).dir
+      const refFiles = []
+      for (let key of Object.keys(bundle)) {
+        _removeLastHashedFile(key)
+        const item = bundle[key]
+        const ext = parse(item.fileName).ext.toLowerCase()
+        if (ext === '.js' || (insertCssRef && ext === '.css')) {
+          const haseCode = _getBundleItemHash(item)
+          if (haseCode) {
+            item.fileName = hashedFiles[key] = _renameWithHash(dir, item.fileName, haseCode)
+          }
+          refFiles.push(item.fileName)
         }
       }
-      let cssFile
-      const scriptDir = p.dir
-      if (insertCssRef) {
-        cssFile = resolve(join(p.dir, p.name + '.css'))
-        _removeOldHashedFiles(cssFile)
-        if (existsSync(cssFile)) {
-          const cssHash = hash === true
-            ? hasha(readFileSync(cssFile).toString(), { algorithm: 'md5' })
-            : hash
-          if (cssHash) {
-            hashedFiles[cssFile] = cssFile = _renameWithHash(cssFile, cssHash)
-          }
-        } else cssFile = undefined
-      }
+
       if (html.length) {
-        const outputPath = (html.length > 1 && output && extname(output)) ? dirname(output) : output
+        const htmlOutput = (html.length > 1 && output && extname(output)) ? dirname(output) : output
         html.every(({ id, code }) => _writeHtml({
-          scriptDir,
-          scriptFile,
-          cssFile,
+          dir,
           input: id,
-          output: outputPath,
-          code
+          output: htmlOutput,
+          code,
+          refFiles
         }))
       } else if (template) {
         const input = resolve(cwd, template)
         if (existsSync(input)) {
           const code = readFileSync(input).toString()
           _writeHtml({
-            scriptDir,
-            scriptFile,
-            cssFile,
+            dir,
             input,
             output,
-            code
+            code,
+            refFiles
           })
         }
       }

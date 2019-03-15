@@ -1,4 +1,4 @@
-const { resolve, parse, join, dirname, basename, extname, relative } = require('path')
+const { resolve, parse, dirname, basename, extname, relative } = require('path')
 const { existsSync, readFileSync, writeFileSync, unlinkSync, renameSync } = require('fs')
 const { createFilter } = require('rollup-pluginutils')
 const cheerio = require('cheerio')
@@ -13,22 +13,23 @@ module.exports = (options = {}) => {
     hash,
     replaceToMinScripts,
     insertCssRef = true,
+    title,
     cwd = process.cwd()
   } = options
   const filter = createFilter(include || ['**/*.html'], exclude)
   const html = []
   const hashedFiles = {}
 
-  function _insertRef ({ $, ref, htmlFile }) {
+  function _insertRef ({ $, refFile, htmlFile }) {
     // if (!existsSync(ref)) return
     const dir = dirname(htmlFile)
-    if (extname(ref) === '.js') {
+    if (extname(refFile) === '.js') {
       $('<script type="text/javascript"></script>')
-        .attr('src', relative(dir, ref))
+        .attr('src', relative(dir, refFile))
         .appendTo($('body'))
     } else {
       $('<link rel="stylesheet" type="text/css"></link>')
-        .attr('href', relative(dir, ref))
+        .attr('href', relative(dir, refFile))
         .appendTo($('head'))
     }
   }
@@ -42,15 +43,23 @@ module.exports = (options = {}) => {
     })
   }
 
+  function _setTitle ($) {
+    const head$ = $('head')
+    const title$ = $('title', head$)
+    if (title$.length) title$.text(title)
+    else $('<title></title>').text(title).appendTo(head$)
+  }
+
   function _writeHtml ({ dir, input, output, code, refFiles }) {
     output = resolve(cwd, output || dir)
     if (!extname(output)) output = resolve(output, basename(input))
     const $ = cheerio.load(code, { decodeEntities: false })
+    if (title) _setTitle($)
     if (replaceToMinScripts) _replaceToMinScripts($, output)
     for (let f of refFiles) {
       _insertRef({
         $,
-        ref: resolve(dir, f),
+        refFile: resolve(dir, f),
         htmlFile: output
       })
     }

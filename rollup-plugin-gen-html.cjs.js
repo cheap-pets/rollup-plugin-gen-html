@@ -36,10 +36,12 @@ module.exports = (options = {}) => {
 
   function _replaceToMinScripts ($, htmlFile) {
     $('script').each((idx, elm) => {
-      const htmlDir = dirname(htmlFile)
-      const p = parse(elm.attribs.src)
-      const scriptFile = resolve(htmlDir, p.dir, p.name + '.min' + p.ext)
-      if (existsSync(scriptFile)) elm.attribs.src = relative(htmlDir, scriptFile)
+      if (Object(elm.attribs).src) {
+        const htmlDir = dirname(htmlFile)
+        const p = parse(elm.attribs.src)
+        const scriptFile = resolve(htmlDir, p.dir, p.name + '.min' + p.ext)
+        if (existsSync(scriptFile)) elm.attribs.src = relative(htmlDir, scriptFile)
+      }
     })
   }
 

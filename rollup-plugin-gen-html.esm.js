@@ -106,7 +106,10 @@ export default (options = {}) => {
     transform (code, id) {
       if (filter(id)) {
         html.push({ id, code })
-        return ''
+        return {
+          code: '',
+          map: null
+        }
       }
     },
     generateBundle (options, bundle, isWrite) {

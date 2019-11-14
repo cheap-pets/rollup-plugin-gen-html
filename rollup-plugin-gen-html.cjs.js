@@ -40,7 +40,10 @@ module.exports = (options = {}) => {
         const htmlDir = dirname(htmlFile)
         const p = parse(elm.attribs.src)
         const scriptFile = resolve(htmlDir, p.dir, p.name + '.min' + p.ext)
-        if (existsSync(scriptFile)) elm.attribs.src = relative(htmlDir, scriptFile)
+        if (existsSync(scriptFile)) {
+          const minScriptPath = relative(htmlDir, scriptFile)
+          elm.attribs.src = minScriptPath.replace(/\\/g, '\/')
+        }
       }
     })
   }

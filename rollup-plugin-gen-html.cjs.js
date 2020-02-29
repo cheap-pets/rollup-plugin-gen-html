@@ -1,5 +1,5 @@
 const { resolve, parse, dirname, basename, extname, relative } = require('path')
-const { existsSync, readFileSync, writeFileSync, unlinkSync, renameSync } = require('fs')
+const { existsSync, readFileSync, mkdirsSync, writeFileSync, unlinkSync, renameSync } = require('fs-extra')
 const { createFilter } = require('rollup-pluginutils')
 const cheerio = require('cheerio')
 const hasha = require('hasha')
@@ -42,7 +42,7 @@ module.exports = (options = {}) => {
         const scriptFile = resolve(htmlDir, p.dir, p.name + '.min' + p.ext)
         if (existsSync(scriptFile)) {
           const minScriptPath = relative(htmlDir, scriptFile)
-          elm.attribs.src = minScriptPath.replace(/\\/g, '\/')
+          elm.attribs.src = minScriptPath.replace(/\\/g, '/')
         }
       }
     })
@@ -61,7 +61,7 @@ module.exports = (options = {}) => {
     const $ = cheerio.load(code, { decodeEntities: false })
     if (title) _setTitle($)
     if (replaceToMinScripts) _replaceToMinScripts($, output)
-    for (let f of refFiles) {
+    for (const f of refFiles) {
       _insertRef({
         $,
         refFile: resolve(dir, f),
@@ -69,10 +69,11 @@ module.exports = (options = {}) => {
       })
     }
     code = $.html()
-    for (let s in options.replaces) {
-      let v = options.replaces[s]
+    for (const s in options.replaces) {
+      const v = options.replaces[s]
       code = code.replace(s, v)
     }
+    mkdirsSync(parse(output).dir)
     writeFileSync(output, code)
     return true
   }
@@ -119,7 +120,7 @@ module.exports = (options = {}) => {
       if (!isWrite || (!html.length && !template)) return
       const dir = parse(resolve(options.file)).dir
       const refFiles = []
-      for (let key of Object.keys(bundle)) {
+      for (const key of Object.keys(bundle)) {
         _removeLastHashedFile(key)
         const item = bundle[key]
         const ext = parse(item.fileName).ext.toLowerCase()

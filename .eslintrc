@@ -3,6 +3,9 @@
   "extends": [
     "standard"
   ],
+  "parserOptions": {
+    "ecmaVersion": 2015
+  },
   "globals": {},
   "env": {
     "commonjs": true,
